@@ -1,65 +1,116 @@
-"""Unit tests for the voyage file parser."""
+"""
+Parsers for user-supplied CSV/Excel voyage data.
 
-import pytest
+Expected columns (case-insensitive, spaces replaced with underscores):
+    phase           - name of the voyage leg (str)
+    duration_h      - duration in hours (float)
+    load_factor     - engine load 0-1 (float)
+    engine_name     - label for the engine (str)
+    power_kw        - installed engine power per unit (float)
+    sfc_g_per_kwh   - specific fuel consumption (float)
+    fuel_type       - one of HFO, MDO, LNG, VLSFO (str)
+    num_units       - number of identical engines (int, optional, default 1)
+
+Each row represents one engine in one voyage phase.
+Multiple engines in the same phase share the same phase/duration/load_factor values.
+"""
+
+from __future__ import annotations
+
 import pandas as pd
-import tempfile, os
-from core.parsers import parse_voyage_file
+from pathlib import Path
+
+from .emissions import EngineConfig, VoyageLeg
+from .fuel_factors import SUPPORTED_FUELS
 
 
-SAMPLE_DATA = pd.DataFrame([
-    {"phase": "Hotelling",  "duration_h": 8,  "load_factor": 0.0,  "engine_name": "Aux",  "power_kw": 1200,  "sfc_g_per_kwh": 210, "fuel_type": "MDO", "num_units": 2},
-    {"phase": "At-Sea",     "duration_h": 48, "load_factor": 0.75, "engine_name": "Main", "power_kw": 12000, "sfc_g_per_kwh": 175, "fuel_type": "HFO", "num_units": 1},
-    {"phase": "At-Sea",     "duration_h": 48, "load_factor": 0.75, "engine_name": "Aux",  "power_kw": 1200,  "sfc_g_per_kwh": 210, "fuel_type": "MDO", "num_units": 2},
-])
+REQUIRED_COLUMNS = {
+    "phase", "duration_h", "load_factor",
+    "engine_name", "power_kw", "sfc_g_per_kwh", "fuel_type",
+}
 
 
-def _write_csv(df, suffix=".csv"):
-    f = tempfile.NamedTemporaryFile(suffix=suffix, delete=False, mode="w")
-    df.to_csv(f, index=False)
-    f.close()
-    return f.name
+def parse_voyage_file(filepath: str | Path) -> list[VoyageLeg]:
+    """
+    Read a CSV or Excel file and return a list of VoyageLeg objects.
+
+    Parameters
+    ----------
+    filepath : str or Path
+        Path to .csv or .xlsx file.
+
+    Returns
+    -------
+    list[VoyageLeg]
+    """
+    filepath = Path(filepath)
+
+    if filepath.suffix == ".csv":
+        df = pd.read_csv(filepath)
+    elif filepath.suffix in (".xlsx", ".xls"):
+        df = pd.read_excel(filepath)
+    else:
+        raise ValueError(f"Unsupported file type: {filepath.suffix}")
+
+    # Normalise column names
+    df.columns = df.columns.str.strip().str.lower().str.replace(" ", "_")
+
+    _validate_columns(df)
+    df = _coerce_types(df)
+
+    return _build_legs(df)
 
 
-def test_parse_csv_returns_correct_number_of_legs():
-    path = _write_csv(SAMPLE_DATA)
-    try:
-        legs = parse_voyage_file(path)
-        assert len(legs) == 2  # Hotelling + At-Sea
-    finally:
-        os.unlink(path)
+# ---------------------------------------------------------------------------
+# Internal helpers
+# ---------------------------------------------------------------------------
+
+def _validate_columns(df: pd.DataFrame) -> None:
+    missing = REQUIRED_COLUMNS - set(df.columns)
+    if missing:
+        raise ValueError(f"Missing required columns: {missing}")
+
+    bad_fuels = set(df["fuel_type"].str.upper().unique()) - set(SUPPORTED_FUELS)
+    if bad_fuels:
+        raise ValueError(
+            f"Unsupported fuel types in file: {bad_fuels}. "
+            f"Supported: {SUPPORTED_FUELS}"
+        )
 
 
-def test_at_sea_has_two_engines():
-    path = _write_csv(SAMPLE_DATA)
-    try:
-        legs = parse_voyage_file(path)
-        at_sea = next(l for l in legs if l.phase == "At-Sea")
-        assert len(at_sea.engines) == 2
-    finally:
-        os.unlink(path)
+def _coerce_types(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+    df["duration_h"]    = pd.to_numeric(df["duration_h"],    errors="raise")
+    df["load_factor"]   = pd.to_numeric(df["load_factor"],   errors="raise")
+    df["power_kw"]      = pd.to_numeric(df["power_kw"],      errors="raise")
+    df["sfc_g_per_kwh"] = pd.to_numeric(df["sfc_g_per_kwh"], errors="raise")
+    df["num_units"]     = pd.to_numeric(
+        df["num_units"] if "num_units" in df.columns else 1,
+        errors="raise"
+    ).fillna(1).astype(int)
+    df["fuel_type"] = df["fuel_type"].str.strip().str.upper()
+    return df
 
 
-def test_missing_column_raises():
-    bad_df = SAMPLE_DATA.drop(columns=["fuel_type"])
-    path = _write_csv(bad_df)
-    try:
-        with pytest.raises(ValueError, match="Missing required columns"):
-            parse_voyage_file(path)
-    finally:
-        os.unlink(path)
-
-
-def test_unsupported_fuel_raises():
-    bad_df = SAMPLE_DATA.copy()
-    bad_df.loc[0, "fuel_type"] = "COAL"
-    path = _write_csv(bad_df)
-    try:
-        with pytest.raises(ValueError, match="Unsupported fuel types"):
-            parse_voyage_file(path)
-    finally:
-        os.unlink(path)
-
-
-def test_unsupported_extension_raises():
-    with pytest.raises(ValueError, match="Unsupported file type"):
-        parse_voyage_file("voyage.txt")
+def _build_legs(df: pd.DataFrame) -> list[VoyageLeg]:
+    legs = []
+    for (phase, duration_h, load_factor), group in df.groupby(
+        ["phase", "duration_h", "load_factor"], sort=False
+    ):
+        engines = [
+            EngineConfig(
+                name=row["engine_name"],
+                power_kw=row["power_kw"],
+                sfc_g_per_kwh=row["sfc_g_per_kwh"],
+                fuel_type=row["fuel_type"],
+                num_units=int(row["num_units"]),
+            )
+            for _, row in group.iterrows()
+        ]
+        legs.append(VoyageLeg(
+            phase=phase,
+            duration_h=float(duration_h),
+            load_factor=float(load_factor),
+            engines=engines,
+        ))
+    return legs
