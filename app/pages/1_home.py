@@ -1,6 +1,8 @@
 import streamlit as st
 from pathlib import Path
 
+st.set_page_config(layout="wide")
+
 def load_css(file_path):
     with open(file_path) as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
@@ -37,7 +39,7 @@ with st.expander("**1. Upload Your Data**",False):
         A template is available to guide you in structuring your data for accurate emissions calculations.
         """
     )
-    with open("data/data_template.csv", "rb") as file:
+    with open("clean_up/data_template.csv", "rb") as file:
         st.download_button(
             label="Download template",
             data=file,

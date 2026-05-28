@@ -1,55 +1,56 @@
-"""
-Report generation utilities.
-Produces Excel and CSV summaries from EmissionsResult data.
-PDF support can be added via WeasyPrint later.
-"""
-
-from __future__ import annotations
-
-import io
+import io  
 import pandas as pd
-from .emissions import EmissionsResult
+from datetime import datetime
+from pathlib import Path
+from .data_handling import group_emissions
 
 
-def generate_report(results: list[EmissionsResult], format: str = "xlsx") -> bytes:
-    """
-    Generate a downloadable report.
-
-    Parameters
-    ----------
-    results : list[EmissionsResult]
-    format  : "xlsx" | "csv"
-
-    Returns
-    -------
-    bytes - file content ready to serve or write to disk
-    """
-    rows = [r.to_series() for r in results]
-    df = pd.DataFrame(rows)
-
-    # Add totals row
-    numeric_cols = df.select_dtypes(include="number").columns
-    total = df[numeric_cols].sum()
-    total["phase"] = "TOTAL"
-    df = pd.concat([df, total.to_frame().T], ignore_index=True)
-
-    if format == "xlsx":
-        return _to_excel(df)
-    elif format == "csv":
-        return df.to_csv(index=False).encode("utf-8")
+def get_default_path(df_calls=None, base_dir=None):
+    if df_calls is not None:
+        ymin = df_calls["Year"].min()
+        ymax = df_calls["Year"].max()
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"emissions_{ymin}_{ymax}_{ts}.xlsx"
     else:
-        raise ValueError(f"Unsupported format '{format}'. Use 'xlsx' or 'csv'.")
+        filename = "emissions_report.xlsx"
+    return filename # Return just the filename for Streamlit
 
+def generate_excel_report(df_calls, kpis=None, qc_summary=None):
+    """
+    Generates Excel report in memory and returns the filename and raw data bytes.
+    """
+    if kpis is None:
+        total = group_emissions(df_calls)
+        by_fuel = group_emissions(df_calls, ["Fuel type"])
+        by_terminal = group_emissions(df_calls, ["Terminal"])
+        by_consignatari = group_emissions(df_calls, ["Consignee"])
 
-def _to_excel(df: pd.DataFrame) -> bytes:
+        kpis = {
+            "All_Calls": df_calls,
+            "Total": total,
+            "Per_Fuel": by_fuel,
+            "Per_Terminal": by_terminal,
+            "Per_Consignatari": by_consignatari
+        }
+
+    filename = get_default_path(df_calls)
+
+    # -------------------------
+    # WRITE EXCEL TO MEMORY BUFFER
+    # -------------------------
     buffer = io.BytesIO()
+    
     with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
-        df.to_excel(writer, index=False, sheet_name="Emissions")
-        _autofit_columns(writer.sheets["Emissions"])
-    return buffer.getvalue()
+
+        for name, df in kpis.items():
+            if df is not None and not df.empty:
+                df.to_excel(writer, sheet_name=name[:31], index=False)
+
+        if qc_summary is not None and not qc_summary.empty:
+            qc_summary.to_excel(writer, sheet_name="QC_Summary", index=False)
+
+    # Extract the raw binary data
+    excel_data = buffer.getvalue()
+    return filename, excel_data
 
 
-def _autofit_columns(ws) -> None:
-    for col in ws.columns:
-        max_len = max(len(str(cell.value or "")) for cell in col)
-        ws.column_dimensions[col[0].column_letter].width = min(max_len + 4, 40)

@@ -1,0 +1,54 @@
+{
+  "_meta": {
+    "description": "Emission factors for auxiliary and main engines by fuel type",
+    "units": "g/kWh",
+    "source": "TODO: Specify source",
+    "notes": "TSP_PM includes TSP, PM10, PM2.5. SFOC is in g/kWh."
+  },
+  "defaults": {
+    "maneuvering": {
+      "time_in": 0.8,
+      "time_out": 0.8,
+      "total_time": 1.6
+    },
+    "navigation": {
+      "time_nav": 1.0
+    }
+  },
+  "MDO/MGO": {
+    "aux": {
+      "CO": 0.974,
+      "NOx": 10.8,
+      "NMVOC": 0.397,
+      "TSP_PM": 0.215,
+      "BC": 0.0105,
+      "SFOC": 194
+    },
+    "main": {
+      "CO": 2.39,
+      "NOx": 14.8,
+      "NMVOC": 0.753,
+      "TSP_PM": 0.361,
+      "BC": 0.033,
+      "SFOC": 263
+    }
+  },
+  "LNG": {
+    "aux": {
+      "CO": 2.92,
+      "NOx": 0.566,
+      "NMVOC": 0.38,
+      "TSP_PM": 0.00018,
+      "BC": 0.0000036,
+      "SFOC": 169
+    },
+    "main": {
+      "CO": 6.15,
+      "NOx": 1.25,
+      "NMVOC": 1.242,
+      "TSP_PM": 0.000541,
+      "BC": 0.0000108,
+      "SFOC": 229
+    }
+  }
+}

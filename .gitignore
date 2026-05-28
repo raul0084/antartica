@@ -27,6 +27,7 @@ htmlcov/
 # Data (optional – keep sample files if needed)
 data/*
 !data/sample_voyage.csv
+!data/emission_factors.json
 
 # Notebooks (optional)
 notebooks/
