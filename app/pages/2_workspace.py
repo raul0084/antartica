@@ -4,7 +4,7 @@ from app.components.file_upload import data_uploader_block, upload_emission_fact
 from app.components.data_preview import calls_preview_block, vaixells_preview_block
 from app.components.charts import emissions_time_chart
 from core.pipeline import run_pipeline
-from core.config import default_uncertainties, default_emission_factors
+from core.config import default_uncertainties, default_emission_factors, validate_calls, validate_vaixells
 from core.report import generate_excel_report
 
 st.set_page_config(layout="wide")
@@ -16,11 +16,11 @@ with left_col:
     st.subheader("Main Data Inputs")
 
     # UPLOAD PORT CALLS
-    df_calls =data_uploader_block(key="calls")
+    df_calls =data_uploader_block(key="calls", validator=validate_calls)
     calls_preview_block(df_calls)
 
     # UPLOAD VESSEL INFO
-    df_vaixells = data_uploader_block(key="vaixells")
+    df_vaixells = data_uploader_block(key="vaixells", validator=validate_vaixells)
     vaixells_preview_block(df_vaixells) 
 
     st.subheader("Optional Data Inputs")

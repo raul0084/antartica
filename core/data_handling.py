@@ -181,10 +181,19 @@ def calculate_operational_times(df):
     df["hot_time"] = df["hot_time"].fillna(24)
 
     # --- defaults
-    df["mani_time"] = 1.0
-    df["nav_time"] = 0.5
 
-    return df
+    DEFAULTS = {
+        "mani_time": 1.0,
+        "nav_time":  0.5,
+        "hot_time":  0.0,  # easy to add more
+    }
+
+    for col, default in DEFAULTS.items():
+        if col not in df.columns:
+            df[col] = default
+        else:
+            df[col] = df[col].fillna(default)
+            df.loc[df[col] < 0, col] = default
 
 
 

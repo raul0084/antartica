@@ -5,9 +5,17 @@ import json
 
 SUPPORTED_TYPES = ["csv", "xlsx", "xls"]
 
-def load_file(file):
+def load_file(file, validator=None):
     """
     Converts uploaded Streamlit file into a pandas DataFrame.
+    
+    Parameters
+    ----------
+    file : UploadedFile
+        Streamlit uploaded file object.
+    validator : callable, optional
+        Function that takes a DataFrame and returns (bool, str).
+        True = valid, False = invalid with error message.
     """
 
     if file is None:
@@ -21,10 +29,19 @@ def load_file(file):
 
     try:
         if file_extension == "csv":
-            return pd.read_csv(file)
-
+            df = pd.read_csv(file)
         elif file_extension in ["xlsx", "xls"]:
-            return pd.read_excel(file, engine="openpyxl")
+            df = pd.read_excel(file, engine="openpyxl")
+        else:
+            return None
+
+        if validator is not None:
+            is_valid, message = validator(df)
+            if not is_valid:
+                st.error(f"File validation failed: {message}")
+                return None
+
+        return df
 
     except Exception as e:
         st.error(f"Error reading file: {e}")
@@ -32,7 +49,8 @@ def load_file(file):
 
 def data_uploader_block(
     label="Upload your data",
-    key="df"
+    key="df",
+    validator=None
 ):
     """
     Sets the session state for the key to the data uploaded
@@ -43,7 +61,7 @@ def data_uploader_block(
         key=f"uploader_{key}"  # important: unique widget key
     )
 
-    df = load_file(uploaded_file)
+    df = load_file(uploaded_file,validator)
 
     if df is not None:
         st.session_state[key] = df
@@ -64,7 +82,6 @@ def upload_emission_factors(key="EF"):
             return st.session_state.get(key, None)
         except Exception as e:
             st.error(f"Invalid EF file: {e}")
-
 
 def upload_uncertainties(key="U"):
     uploaded_file = st.file_uploader(
