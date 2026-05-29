@@ -14,7 +14,7 @@ def run_pipeline(df_calls, df_vessels, EF, U):
     df_calls["year"] = pd.to_datetime(df_calls["etautc"]).dt.year
     df_calls["date"] = pd.to_datetime(df_calls["etautc"])
     # Enrich with vessel data
-    df = enrich_calls_with_vessel_data(df_calls, df_vessels)
+    df, df_unmatched = enrich_calls_with_vessel_data(df_calls, df_vessels)
 
     # Compute times
     df = calculate_operational_times(df)
@@ -45,4 +45,4 @@ def run_pipeline(df_calls, df_vessels, EF, U):
 
     df = apply_labels(df)
 
-    return df, kpis
+    return df, kpis, df_unmatched

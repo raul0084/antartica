@@ -32,46 +32,117 @@ st.markdown(
 # --- How it works ---
 st.markdown("## 🌐 How it works")
 
-with st.expander("**1. Upload Your Data**",False):
+with st.expander("**1. Upload Your Data**", False):
     st.write(
         """
-        Start by uploading your activity or transport dataset. We support CSV and Excel formats.
-        A template is available to guide you in structuring your data for accurate emissions calculations.
+        Start by uploading two files: your **port calls** dataset and a **vessel info** file.
+        The model matches both files to enrich each port call with the corresponding vessel's
+        technical specifications. CSV and Excel formats are supported.
+
+        Both files have minimum column requirements for the model to run — download the templates
+        below to make sure your data is structured correctly.
         """
     )
-    with open("clean_up/data_template.csv", "rb") as file:
+
+    from pathlib import Path
+
+    port_calls_template   = Path(__file__).parents[2] / "data" / "templates" / "port_calls_template.csv"
+    vessels_info_template = Path(__file__).parents[2] / "data" / "templates" / "vessels_info_template.csv"
+
+    col1, col2 = st.columns([1, 1])
+
+    with col1:
         st.download_button(
-            label="Download template",
-            data=file,
-            file_name="emissions_template.csv",
-            mime="text.csv",
+            label="Download port calls template",
+            data=open(port_calls_template, "rb"),
+            file_name="port_calls_template.csv",
+            mime="text/csv",
             icon=":material/download:",
         )
 
-with st.expander("**2. Processing**",False):
+    with col2:
+        st.download_button(
+            label="Download vessel info template",
+            data=open(vessels_info_template, "rb"),
+            file_name="vessels_info_template.csv",
+            mime="text/csv",
+            icon=":material/download:",
+        )
+
+with st.expander("**2. Customise Emission Factors & Uncertainties (Optional)**", False):
     st.write(
         """
-        Once your data is uploaded, we apply validated emission factors to calculate your carbon footprint.
-        Our backend processes the data efficiently, providing you with accurate results in seconds.
+        By default the model uses a built-in set of emission factors and uncertainty values
+        validated against international maritime standards.
+
+        If you have fleet-specific or port-specific data, you can override the defaults by
+        uploading your own **emission factors** and **uncertainties** as JSON files.
+        Templates and format documentation are available in the Resources section.
+        """
+    )
+    EF_template   = Path(__file__).parents[2] / "data" / "templates" / "emission_factors_template.json"
+    U_template = Path(__file__).parents[2] / "data" / "templates" / "uncertainties_template.json"
+
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        with open(EF_template, "rb") as file:
+            st.download_button(
+                label="Download emission factors template",
+                data=file.read(),                       
+                file_name="emission_factors_template.json", 
+                mime="application/json",                
+                icon=":material/download:",
+            )
+
+    with col2:
+        with open(U_template, "rb") as file:
+            st.download_button(
+                label="Download uncertainties template",
+                data=file.read(),                       
+                file_name="uncertainties.json", 
+                mime="application/json",                
+                icon=":material/download:",
+            )
+
+with st.expander("**3. Run the Model**", False):
+    st.write(
+        """
+        Once your files are uploaded, hit **Run Emissions Model**. The pipeline will:
+        - Match each port call to its vessel's technical specs
+        - Apply emission factors across three operational modes: navigation, manoeuvring, and hotelling
+        - Calculate total emissions and uncertainties for CO, NOx, NMVOC, TSP/PM, BC, SFOC and CO₂
+        
+        Results are ready in seconds.
         """
     )
 
-with st.expander("**3. Visualize**",False):
+with st.expander("**4. Explore & Filter**", False):
     st.write(
         """
-        Finally, we present your emissions data through interactive charts and graphs.
-        Explore your impact across different activities, time periods, or categories to identify key areas for improvement.
+        Results are displayed as an interactive time series chart. Use the filters to drill down by:
+        vessel name, vessel type, terminal, fuel type, and vessel size range.
+        Select one or more pollutants to compare them side by side on the same chart.
         """
     )
+
+with st.expander("**5. Download Your Report**", False):
+    st.write(
+        """
+        Export your results as an Excel report. You can download the **full results** or a
+        **filtered version** reflecting exactly what is displayed in the chart —
+        useful for sharing targeted insights with specific stakeholders.
+        """
+    )
+    st.markdown(
+        """
+        Ready to dive in? Click the button below to start analyzing your emissions data!
+        """,
+        unsafe_allow_html=True
+    )
+    st.page_link("pages/2_workspace.py", label="🚀 Get Started")
     
 
-st.markdown(
-    """
-    Ready to dive in? Click the button below to start analyzing your emissions data!
-    """,
-    unsafe_allow_html=True
-)
-st.page_link("pages/2_workspace.py", label="🚀 Get Started")
+
 
 
 

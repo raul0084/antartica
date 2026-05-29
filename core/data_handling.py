@@ -73,50 +73,53 @@ def enrich_calls_with_vessel_data(
     df_vessels
 ):
     """
-    Adds P_main, P_aux, fuel and default load factors to df_calls.
+    Adds P_main, P_aux, fuel, eslora_metres and default load factors to df_calls.
     Matches vessels using imo, mmsi or vessel_name.
+    Returns (df_enriched, df_unmatched) for quality control.
     """
 
     # -------------------------
     # DEFAULTS
     # -------------------------
-    DEFAULT_P_MAIN = 10000
-    DEFAULT_P_AUX  = 2000
-    DEFAULT_P_GT   = 5000
-    DEFAULT_FUEL   = "mdo/mgo"
+    DEFAULT_P_MAIN      = 10000
+    DEFAULT_P_AUX       = 2000
+    DEFAULT_P_GT        = 5000
+    DEFAULT_FUEL        = "mdo/mgo"
+    DEFAULT_ESLORA      = 100.0
 
-    LF_main = 0.8
-    LF_aux_nav = 0.3
-    LF_aux_mani = 0.5
-    LF_aux_hot = 0.2
+    LF_main      = 0.8
+    LF_aux_nav   = 0.3
+    LF_aux_mani  = 0.5
+    LF_aux_hot   = 0.2
 
     # -------------------------
     # CLEAN KEYS
     # -------------------------
     df_vessels = df_vessels.copy()
-    df_calls = df_calls.copy()
+    df_calls   = df_calls.copy()
 
     df_vessels["vaixellnom_clean"] = df_vessels["vaixellnom"].str.lower().str.strip()
-    df_calls["vaixellnom_clean"] = df_calls["vaixellnom"].str.lower().str.strip()
+    df_calls["vaixellnom_clean"]   = df_calls["vaixellnom"].str.lower().str.strip()
 
-    # Ensure consistent types
-    df_calls["imo"] = df_calls["imo"].astype("string").str.strip()
+    df_calls["imo"]   = df_calls["imo"].astype("string").str.strip()
     df_vessels["imo"] = df_vessels["imo"].astype("string").str.strip()
 
-    df_calls["mmsi"] = df_calls["mmsi"].astype("string").str.strip()
+    df_calls["mmsi"]   = df_calls["mmsi"].astype("string").str.strip()
     df_vessels["mmsi"] = df_vessels["mmsi"].astype("string").str.strip()
 
-    # Normalize fuel
     df_vessels["fuel"] = df_vessels["fuel"].str.lower().str.strip()
+
+    VESSEL_COLS = ["p_main", "p_aux", "p_gt", "fuel", "eslora_metres"]
 
     # -------------------------
     # MERGE BY IMO FIRST
     # -------------------------
     df = df_calls.merge(
-        df_vessels[["imo", "p_main", "p_aux", "p_gt", "fuel"]],
+        df_vessels[["imo"] + VESSEL_COLS],
         on="imo",
         how="left"
     )
+    df.loc[df["p_main"].notna(), "match_source"] = "imo"
 
     # -------------------------
     # FILL MISSING VIA MMSI
@@ -124,14 +127,13 @@ def enrich_calls_with_vessel_data(
     mask = df["p_main"].isna()
 
     df_mmsi = df_calls[mask].merge(
-        df_vessels[["mmsi", "p_main", "p_aux", "p_gt", "fuel"]],
+        df_vessels[["mmsi"] + VESSEL_COLS],
         on="mmsi",
         how="left"
     )
 
-    df.loc[mask, ["p_main", "p_aux", "p_gt", "fuel"]] = df_mmsi[
-        ["p_main", "p_aux", "p_gt", "fuel"]
-    ].values
+    df.loc[mask, VESSEL_COLS] = df_mmsi[VESSEL_COLS].values
+    df.loc[mask & df["p_main"].notna(), "match_source"] = "mmsi"
 
     # -------------------------
     # FILL MISSING VIA NAME
@@ -139,53 +141,60 @@ def enrich_calls_with_vessel_data(
     mask = df["p_main"].isna()
 
     df_name = df_calls[mask].merge(
-        df_vessels[["vaixellnom_clean", "p_main", "p_aux", "p_gt", "fuel"]],
+        df_vessels[["vaixellnom_clean"] + VESSEL_COLS],
         on="vaixellnom_clean",
         how="left"
     )
 
-    df.loc[mask, ["p_main", "p_aux", "p_gt", "fuel"]] = df_name[
-        ["p_main", "p_aux", "p_gt", "fuel"]
-    ].values
+    df.loc[mask, VESSEL_COLS] = df_name[VESSEL_COLS].values
+    df.loc[mask & df["p_main"].notna(), "match_source"] = "name"
+
+    # -------------------------
+    # QUALITY CONTROL
+    # -------------------------
+    unmatched_mask = df["p_main"].isna()
+    df_unmatched = df_calls[unmatched_mask][
+        ["vaixellnom", "vaixellnom_clean", "imo", "mmsi", "etautc"]
+    ].copy()
+    df_unmatched["reason"] = "No match found via IMO, MMSI or vessel name"
+    df.loc[unmatched_mask, "match_source"] = "default"
 
     # -------------------------
     # DEFAULT FALLBACK
     # -------------------------
-    df["p_main"] = df["p_main"].fillna(DEFAULT_P_MAIN)
-    df["p_aux"] = df["p_aux"].fillna(DEFAULT_P_AUX)
-    df["p_gt"] = df["p_gt"].fillna(DEFAULT_P_GT)
-    df["fuel"] = df["fuel"].fillna(DEFAULT_FUEL)
+    df["p_main"]        = df["p_main"].fillna(DEFAULT_P_MAIN)
+    df["p_aux"]         = df["p_aux"].fillna(DEFAULT_P_AUX)
+    df["p_gt"]          = df["p_gt"].fillna(DEFAULT_P_GT)
+    df["fuel"]          = df["fuel"].fillna(DEFAULT_FUEL)
+    df["eslora_metres"] = df["eslora_metres"].fillna(DEFAULT_ESLORA)
 
     # -------------------------
     # LOAD FACTORS
     # -------------------------
-    df["lf_main"] = LF_main
-    df["lf_aux_nav"] = LF_aux_nav
-    df["lf_aux_mani"] = LF_aux_mani
-    df["lf_aux_hot"] = LF_aux_hot
+    df["lf_main"]      = LF_main
+    df["lf_aux_nav"]   = LF_aux_nav
+    df["lf_aux_mani"]  = LF_aux_mani
+    df["lf_aux_hot"]   = LF_aux_hot
 
-    return df
+    return df, df_unmatched
 
 # CALCULATE TIMES FOR NAV, MAN, AND HOT
 def calculate_operational_times(df):
 
     df = df.copy()
 
-    # --- hot time (from data)
+    # --- Hotelling time from actual port times
     df["hot_time"] = (
         pd.to_datetime(df["etdutc"], errors="coerce") -
         pd.to_datetime(df["etautc"], errors="coerce")
     ).dt.total_seconds() / 3600
 
-    df["hot_time"] = df["hot_time"].clip(lower=0)
-    df["hot_time"] = df["hot_time"].fillna(24)
+    df["hot_time"] = df["hot_time"].clip(lower=0).fillna(24)
 
-    # --- defaults
-
+    # --- Defaults for mani and nav (if not provided)
     DEFAULTS = {
         "mani_time": 1.0,
         "nav_time":  0.5,
-        "hot_time":  0.0,  # easy to add more
     }
 
     for col, default in DEFAULTS.items():
@@ -194,6 +203,8 @@ def calculate_operational_times(df):
         else:
             df[col] = df[col].fillna(default)
             df.loc[df[col] < 0, col] = default
+
+    return df
 
 
 

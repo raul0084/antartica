@@ -33,6 +33,7 @@ with left_col:
     EF = EF_custom if EF_custom is not None else default_emission_factors()
     U = U_custom if U_custom is not None else default_uncertainties()
 
+
               
 with main_col:
 
@@ -40,24 +41,29 @@ with main_col:
     st.title("🚢 Ship Emissions Calculator")
 
     if df_calls is None and df_vaixells is None:
-        st.info("Upload both datasets to continue.")
+        st.warning("Upload both datasets to continue.")
         st.stop()
     elif df_vaixells is None:
-        st.info("Upload vessels dataset to continue.")
+        st.warning("Upload vessels dataset to continue.")
         st.stop()
     elif df_calls is None:
-        st.info("Upload port calls dataset to continue.")
+        st.warning("Upload port calls dataset to continue.")
         st.stop()
     else: 
-        st.info("Both datasets loaded, you are ready to go.")
         data_ready = True
 
     if data_ready:
         with st.spinner("Running model..."):
-            df_results, kpis = run_pipeline(df_calls, df_vaixells, EF, U)
+            df_results, kpis, df_unmatched = run_pipeline(df_calls, df_vaixells, EF, U)
 
         st.session_state["results"] = df_results
         st.session_state["kpis"] = kpis
+        st.session_state["unmatched"] = df_unmatched
+
+    if not df_unmatched.empty:
+        st.warning(f"{len(df_unmatched)} port calls could not be matched to a vessel and used default values.")
+        with st.expander("View unmatched calls"):
+            st.dataframe(df_unmatched)
 
     if "results" in st.session_state:
         df_filtered = emissions_time_chart(st.session_state["results"])

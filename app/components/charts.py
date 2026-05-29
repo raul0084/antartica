@@ -1,52 +1,42 @@
 import streamlit as st
 import altair as alt
 
-
 def emissions_time_chart(df):
+
+    def safe_multiselect(label, column, key):
+        """Returns multiselect widget, or hidden empty list if column missing."""
+        if column not in df.columns:
+            return []
+        return st.multiselect(
+            label,
+            sorted(df[column].dropna().unique().tolist()),
+            key=key
+        )
 
     # --- Filters ---
     with st.expander("Filters", expanded=False):
         col1, col2, col3 = st.columns(3)
 
         with col1:
-            selected_vessels = st.multiselect(
-                "Vessel",
-                sorted(df["Vessel name"].dropna().unique().tolist()),
-                key="filter_vessel"
-            )
-            selected_types = st.multiselect(
-                "Vessel type",
-                sorted(df["Vessel type"].dropna().unique().tolist()),
-                key="filter_type"
-            )
+            selected_vessels  = safe_multiselect("Vessel",      "Vessel name", "filter_vessel")
+            selected_types    = safe_multiselect("Vessel type",  "Vessel type", "filter_type")
 
         with col2:
-            selected_terminals = st.multiselect(
-                "Terminal",
-                sorted(df["Terminal"].dropna().unique().tolist()),
-                key="filter_terminal"
-            )
-            selected_fuels = st.multiselect(
-                "Fuel type",
-                sorted(df["Fuel type"].dropna().unique().tolist()),
-                key="filter_fuel"
-            )
+            selected_terminals = safe_multiselect("Terminal",   "Terminal",    "filter_terminal")
+            selected_fuels     = safe_multiselect("Fuel type",  "Fuel type",   "filter_fuel")
 
         with col3:
-            selected_esloras = st.multiselect(
-                "LOA range",
-                sorted(df["LOA range"].dropna().unique().tolist()),
-                key="filter_eslora"
-            )
+            selected_esloras   = safe_multiselect("LOA range",  "LOA range",   "filter_eslora")
+
             pollutants = [c for c in df.columns if c.endswith("total (t)")]
             selected_pollutants = st.multiselect(
                 "Pollutant",
                 pollutants,
-                default=pollutants[:1],  # pre-select first one
+                default=pollutants[:1],
                 key="filter_pollutant"
             )
 
-    # --- Apply filters (empty multiselect = no filter applied) ---
+    # --- Apply filters ---
     df_filtered = df.copy()
 
     if selected_vessels:
@@ -63,11 +53,11 @@ def emissions_time_chart(df):
     # --- Aggregation ---
     if df_filtered.empty:
         st.warning("No data matches the selected filters.")
-        return
+        return None
 
     if not selected_pollutants:
         st.info("Select at least one pollutant to display the chart.")
-        return
+        return None
 
     df_plot = (
         df_filtered.groupby("Date")[selected_pollutants]
@@ -96,4 +86,3 @@ def emissions_time_chart(df):
     st.altair_chart(chart, use_container_width=True)
 
     return df_filtered
-
