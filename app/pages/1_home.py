@@ -1,22 +1,22 @@
 import streamlit as st
 from pathlib import Path
+from app.components.file_upload import load_css
 
 st.set_page_config(layout="wide")
 
-def load_css(file_path):
-    with open(file_path) as f:
-        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
-
-css_path = Path(__file__).resolve().parents[1] / "styles" / "style.css"
-load_css(css_path)
+load_css()
 
 header_container = st.container()
 # --- Header ---
-header_container.markdown('<div class="title">🌊 Antarctica</div>', unsafe_allow_html=True)
-header_container.markdown(
-        '<div class="subtitle">Understanding emissions through the lens of the ocean</div>',
-        unsafe_allow_html=True
-    )
+header_container.markdown("""
+                          <div class="hero">
+                            <div class="hero-tag">Home</div>
+                            <div class="hero-title">Ship Emission Tracker</div>
+                            <div class="hero-subtitle">Understanding emissions through the lens of the ocean</div>
+                        </div>
+                        """,
+                        unsafe_allow_html=True)
+st.markdown('<div class="section-divider"></div>', unsafe_allow_html=True)
 
 st.markdown(
     """

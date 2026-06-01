@@ -1,26 +1,345 @@
-.main {
-    background-color: #2181c0;
+
+
+
+/* ============================= */
+/* Fonts */
+/* ============================= 
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+*/
+/* ============================= */
+/* Global */
+/* ============================= */
+html, body, [class*="css"] {
+    font-family: 'DM Sans', sans-serif;
 }
 
+/* Optional page background */
+.main {
+    background-color: #f7fbff;
+}
+
+/* ============================= */
+/* Titles */
+/* ============================= */
 .title {
     font-size: 52px;
     font-weight: 700;
     text-align: center;
-    color: #0b3d91;
+    color: #0c1c39;
     margin-bottom: 0px;
+    border: 1px solid;
+    border-radius: 10px;
+    border-color: #0a1628;
 }
 
 .subtitle {
     text-align: center;
     font-size: 18px;
-    color: #2b6f9c;
+    color: #123a55;
     margin-bottom: 30px;
 }
 
+/* ============================= */
+/* Hero Section */
+/* ============================= */
+.hero {
+    background: solid #92ceff;
+    border-radius: 16px;
+    padding: 56px 48px;
+    margin-bottom: 2.5rem;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid;
+    border-color: #ffffff;
+}
+
+.hero-tag {
+    display: inline-block;
+    background: rgba(0,180,216,0.15);
+    color: #056d82;
+    font-weight: 500;
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 4px 14px;
+    border-radius: 20px;
+    border: 1px solid rgba(0,180,216,0.3);
+    margin-bottom: 1rem;
+}
+
+.hero-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 2.6rem;
+    color: #0f3357;
+    line-height: 1.15;
+    margin: 0 0 1rem 0;
+}
+
+.hero-title span {
+    color: #00b4d8;
+}
+
+.hero-subtitle {
+    font-size: 1.05rem;
+    color: #90aec6;
+    font-weight: 300;
+    max-width: 620px;
+    line-height: 1.7;
+    margin: 0;
+}
+
+/* ============================= */
+/* Cards */
+/* ============================= */
 .card {
     background: white;
     padding: 20px;
     border-radius: 12px;
     box-shadow: 0px 4px 20px rgba(0,0,0,0.05);
     margin-top: 20px;
+}
+
+/* ============================= */
+/* Sections */
+/* ============================= */
+.section-label {
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #00b4d8;
+    margin-bottom: 0.3rem;
+}
+
+.section-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 1.55rem;
+    color: #0a1628;
+    margin-bottom: 1.5rem;
+}
+
+/* ============================= */
+/* Team Cards */
+/* ============================= */
+.team-card {
+    background: #ffffff;
+    border: 1px solid #e2eaf2;
+    border-radius: 14px;
+    padding: 28px 24px;
+    transition: 0.2s ease;
+}
+
+.team-card:hover {
+    box-shadow: 0 8px 32px rgba(10,22,40,0.1);
+    transform: translateY(-3px);
+}
+
+.team-avatar {
+    width: 62px;
+    height: 62px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #0a3d62, #00b4d8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 1rem;
+}
+
+.team-name {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    color: #0a1628;
+}
+
+.team-role {
+    font-size: 0.78rem;
+    color: #00b4d8;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+}
+
+.team-bio {
+    font-size: 0.87rem;
+    color: #4a637a;
+}
+
+/* ============================= */
+/* Stats */
+/* ============================= */
+.stat-card {
+    border: 1px solid #e2eaf2;
+    border-radius: 12px;
+    padding: 24px;
+    text-align: center;
+}
+
+.stat-number {
+    font-family: 'Syne', sans-serif;
+    font-size: 2rem;
+    color: #004a75;
+}
+
+.stat-label {
+    font-size: 0.78rem;
+    color: #00192d;
+}
+
+/* ============================= */
+/* Divider */
+/* ============================= */
+.section-divider {
+    height: 1px;
+    background: linear-gradient(90deg, #00b4d8 0%, transparent 100%);
+    margin: 2.5rem 0;
+    border: none;
+}
+
+/* ============================= */
+/* RESOURCES PAGE */
+/* ============================= */
+
+/* Page header (aligned with hero but lighter) */
+.page-header {
+    background: linear-gradient(135deg, #4c6fa3 0%, #73b0e9 100%);
+    border-radius: 16px;
+    padding: 44px 48px;
+    margin-bottom: 2rem;
+}
+
+/* Reuse existing .tag instead of redefining */
+/* Only tweak spacing inside header */
+.page-header .tag {
+    margin-bottom: 0.9rem;
+}
+
+/* Title (match hero but slightly smaller) */
+.page-header h1 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 2.2rem;
+    color: #f0f4f8;
+    margin: 0 0 0.7rem 0;
+}
+
+.page-header h1 span {
+    color: #00b4d8;
+}
+
+/* Subtitle */
+.page-header p {
+    color: #90aec6;
+    font-weight: 300;
+    font-size: 1rem;
+    max-width: 580px;
+    line-height: 1.7;
+    margin: 0;
+}
+
+/* Resource cards (same philosophy as team-card) */
+.res-card {
+    background: #ffffff;
+    border: 1px solid #e2eaf2;
+    border-radius: 14px; /* match team-card */
+    padding: 22px;
+    margin-bottom: 14px;
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.res-card:hover {
+    box-shadow: 0 8px 32px rgba(10,22,40,0.1);
+    transform: translateY(-2px);
+}
+
+/* Icon */
+.res-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+/* Body */
+.res-body {
+    flex: 1;
+}
+
+/* Title */
+.res-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.98rem;
+    color: #0a1628;
+    margin: 0 0 3px 0;
+}
+
+/* Source */
+.res-source {
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: #00b4d8;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin: 0 0 6px 0;
+}
+
+/* Description */
+.res-desc {
+    font-size: 0.86rem;
+    color: #4a637a;
+    line-height: 1.6;
+    margin: 0 0 10px 0;
+}
+
+/* Link */
+.res-link {
+    font-size: 0.8rem;
+    color: #0096c7;
+    font-weight: 500;
+    text-decoration: none;
+}
+
+/* Badges */
+.res-badge {
+    display: inline-block;
+    font-size: 0.68rem;
+    padding: 2px 9px;
+    border-radius: 20px;
+    font-weight: 500;
+    margin-left: 8px;
+}
+
+/* Badge variants (keep yours, just cleaned) */
+.badge-reg { background: #e8f5e9; color: #388e3c; }
+.badge-data { background: #e3f2fd; color: #1565c0; }
+.badge-tool { background: #fff3e0; color: #e65100; }
+.badge-paper { background: #f3e5f5; color: #7b1fa2; }
+.badge-std { background: #fce4ec; color: #c62828; }
+
+/* Tip box (aligned with your design system) */
+.tip-box {
+    background: #edf4fb;
+    border: 1px solid #c8dcee;
+    border-left: 4px solid #00b4d8;
+    border-radius: 12px;
+    padding: 16px 20px;
+    font-size: 0.87rem;
+    color: #2c6e9e;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+}
+
+.tip-box strong {
+    color: #0a3d62;
 }

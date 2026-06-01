@@ -5,6 +5,12 @@ import json
 
 SUPPORTED_TYPES = ["csv", "xlsx", "xls"]
 
+def load_css():
+    css_path = Path(__file__).resolve().parents[1] / "styles" / "style.css"
+    with open(css_path) as f:
+        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+    return True
+
 def load_file(file, validator=None):
     """
     Converts uploaded Streamlit file into a pandas DataFrame.

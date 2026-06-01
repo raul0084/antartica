@@ -1,6 +1,6 @@
 import streamlit as st
 
-from app.components.file_upload import data_uploader_block, upload_emission_factors, upload_uncertainties
+from app.components.file_upload import data_uploader_block, upload_emission_factors, upload_uncertainties, load_css
 from app.components.data_preview import calls_preview_block, vaixells_preview_block
 from app.components.charts import emissions_time_chart
 from core.pipeline import run_pipeline
@@ -9,45 +9,80 @@ from core.report import generate_excel_report
 
 st.set_page_config(layout="wide")
 
-left_col, main_col = st.columns([1, 3])
+load_css()
 
-with left_col:
+title_container = st.container()
 
-    st.subheader("Main Data Inputs")
+title_container.markdown("""
+                        <div class="hero">
+                            <div class="hero-tag">Workspace</div>
+                            <div class="hero-title">Emissions Tracker</div>
+                            <div class="hero-subtitle">Upload, analyze, and download your emissions data</div>
+                        </div>
+                        """,
+                        unsafe_allow_html=True)
+st.markdown('<div class="section-divider"></div>', unsafe_allow_html=True)
 
-    # UPLOAD PORT CALLS
-    df_calls =data_uploader_block(key="calls", validator=validate_calls)
-    calls_preview_block(df_calls)
+main_col, right_col = st.columns([3, 1])
 
-    # UPLOAD VESSEL INFO
-    df_vaixells = data_uploader_block(key="vaixells", validator=validate_vaixells)
-    vaixells_preview_block(df_vaixells) 
+with right_col:
 
-    st.subheader("Optional Data Inputs")
+        with st.expander("Upload Data", expanded=True):
+            st.subheader("Main Data Inputs")
 
-    # LOADING EMISSION FACTORS & UNCERTAINTIES
-    EF_custom = upload_emission_factors()
-    U_custom = upload_uncertainties()
+            # UPLOAD PORT CALLS
+            df_calls =data_uploader_block(key="calls", validator=validate_calls)
+            calls_preview_block(df_calls)
 
-    # Use custom if uploaded, otherwise pipeline loads defaults internally
-    EF = EF_custom if EF_custom is not None else default_emission_factors()
-    U = U_custom if U_custom is not None else default_uncertainties()
+            # UPLOAD VESSEL INFO
+            df_vaixells = data_uploader_block(key="vaixells", validator=validate_vaixells)
+            vaixells_preview_block(df_vaixells) 
 
+            if st.button("🔄 Reset", key="btn_reset_sys_variables"):
+                st.session_state.clear()
+                st.rerun()
 
+            st.subheader("Optional Data Inputs")
+
+            # LOADING EMISSION FACTORS & UNCERTAINTIES
+            EF_custom = upload_emission_factors()
+            U_custom = upload_uncertainties()
+
+            # Use custom if uploaded, otherwise pipeline loads defaults internally
+            EF = EF_custom if EF_custom is not None else default_emission_factors()
+            U = U_custom if U_custom is not None else default_uncertainties()
               
 with main_col:
 
-    title_container = st.container()
-    st.title("🚢 Ship Emissions Calculator")
-
     if df_calls is None and df_vaixells is None:
-        st.warning("Upload both datasets to continue.")
+        st.markdown(
+            """
+            <div class="tip-box">
+                <strong>💡 Upload both datasets to continue.</strong>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
         st.stop()
     elif df_vaixells is None:
-        st.warning("Upload vessels dataset to continue.")
+        st.markdown(
+            """
+            <div class="tip-box">
+                <strong>💡 Upload vessels dataset to continue.</strong>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
         st.stop()
     elif df_calls is None:
-        st.warning("Upload port calls dataset to continue.")
+        st.markdown(
+            """
+            <div class="tip-box">
+                <strong>💡 Upload port calls dataset to continue.</strong>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
         st.stop()
     else: 
         data_ready = True
@@ -68,7 +103,7 @@ with main_col:
     if "results" in st.session_state:
         df_filtered = emissions_time_chart(st.session_state["results"])
 
-        col1, col2 = st.columns([1, 1])
+        col1, col2= st.columns([1, 1])
 
         with col1:
             filename, excel_bytes = generate_excel_report(st.session_state["results"])
@@ -90,6 +125,8 @@ with main_col:
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     key="btn_download_filtered"
                 )
+
+            
 
     
 

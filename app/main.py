@@ -7,7 +7,7 @@ pages = {
     ],
     "Resources": [
         st.Page("pages/3_about.py", title="About Us"),
-        st.Page("pages/4_resources.py", title="External Resources"),
+        st.Page("pages/4_resources.py", title="Reference Library"),
     ],
 }
 
