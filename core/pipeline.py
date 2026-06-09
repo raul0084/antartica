@@ -31,6 +31,8 @@ def run_pipeline(df_calls, df_vessels, EF, U):
     # Add classification by eslora
     df = classify_by_eslora(df)
 
+
+
     # KPIs
     kpis = {
         "Total": group_emissions(df),

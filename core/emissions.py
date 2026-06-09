@@ -29,29 +29,29 @@ def calculate_emissions(df):
     # -------------------------
     for p in pollutants:
 
-        ef_main = df[f"ef_main_{p}"].div(1e6)
-        ef_aux  = df[f"ef_aux_{p}"].div(1e6)
+        # ef_main = df[f"ef_main_{p}"].div(1e6)
+        # ef_aux  = df[f"ef_aux_{p}"].div(1e6)
 
         # -------------------------
         # MAIN ENGINE
         # -------------------------
-        E_main_nav  = df["p_main"] * df["lf_main"] * ef_main * df["nav_time"]
-        E_main_mani = df["p_main"] * df["lf_main"] * ef_main * df["mani_time"]
+        E_main_nav  = df["p_main"] * df["lf_main"] * df[f"ef_main_{p}"] * df["nav_time"]
+        E_main_mani = df["p_main"] * df["lf_main"] * df[f"ef_main_{p}"] * df["mani_time"]
         E_main_hot  = 0  # always zero
 
         # -------------------------
         # AUX ENGINE
         # -------------------------
-        E_aux_nav  = df["p_aux"] * df["lf_aux_nav"]  * ef_aux * df["nav_time"]
-        E_aux_mani = df["p_aux"] * df["lf_aux_mani"] * ef_aux * df["mani_time"]
-        E_aux_hot  = df["p_aux"] * df["lf_aux_hot"]  * ef_aux * df["hot_time"]
+        E_aux_nav  = df["p_aux"] * df["lf_aux_nav"]  * df[f"ef_aux_{p}"] * df["nav_time"]
+        E_aux_mani = df["p_aux"] * df["lf_aux_mani"] * df[f"ef_aux_{p}"] * df["mani_time"]
+        E_aux_hot  = df["p_aux"] * df["lf_aux_hot"]  * df[f"ef_aux_{p}"] * df["hot_time"]
 
         # -------------------------
         # TOTALS
         # -------------------------
-        df[f"E_nav_{p}_g"]  = E_main_nav  + E_aux_nav
-        df[f"E_mani_{p}_g"] = E_main_mani + E_aux_mani
-        df[f"E_hot_{p}_g"]  = E_main_hot  + E_aux_hot
+        df[f"E_nav_{p}_g"]  = (E_main_nav  + E_aux_nav)/(1e6)
+        df[f"E_mani_{p}_g"] = (E_main_mani + E_aux_mani)/(1e6)
+        df[f"E_hot_{p}_g"]  = (E_main_hot  + E_aux_hot)/(1e6)
         df[f"E_total_{p}_g"] = (
             df[f"E_nav_{p}_g"] +
             df[f"E_mani_{p}_g"] +
@@ -63,7 +63,7 @@ def calculate_emissions(df):
 # CALCULATES UNCERTANTIES PER ROW
 def calculate_uncertainty(df, U):
     """
-    Computes uncertainty (sigma) for each pollutant in a vectorized way.
+    Computes uncertainty (sigma) for each pollutant.
 
     Parameters:
         df: DataFrame with emissions + EF + power + time
@@ -83,23 +83,20 @@ def calculate_uncertainty(df, U):
 
     for p in pollutants:
 
-        ef_main = df[f"ef_main_{p}"]
-        ef_aux  = df[f"ef_aux_{p}"]
-
         uEF = U["ef"][p]
 
         # -------------------------
         # REBUILD COMPONENTS
         # -------------------------
-        E_main_nav  = df["p_main"] * df["lf_main"] * ef_main * df["nav_time"]
-        E_main_mani = df["p_main"] * df["lf_main"] * ef_main * df["mani_time"]
+        E_main_nav  = df["p_main"] * df["lf_main"] * df[f"ef_main_{p}"] * df["nav_time"]
+        E_main_mani = df["p_main"] * df["lf_main"] * df[f"ef_main_{p}"] * df["mani_time"]
 
-        E_aux_nav  = df["p_aux"] * df["lf_aux_nav"]  * ef_aux * df["nav_time"]
-        E_aux_mani = df["p_aux"] * df["lf_aux_mani"] * ef_aux * df["mani_time"]
-        E_aux_hot  = df["p_aux"] * df["lf_aux_hot"]  * ef_aux * df["hot_time"]
+        E_aux_nav  = df["p_aux"] * df["lf_aux_nav"]  * df[f"ef_aux_{p}"] * df["nav_time"]
+        E_aux_mani = df["p_aux"] * df["lf_aux_mani"] * df[f"ef_aux_{p}"] * df["mani_time"]
+        E_aux_hot  = df["p_aux"] * df["lf_aux_hot"]  * df[f"ef_aux_{p}"] * df["hot_time"]
 
         # -------------------------
-        # RULE B (product)
+        # RULE B (product) sigma = |E| * sqrt( (uEF)^2 + (uP)^2 + (uT)^2 )
         # -------------------------
         sig_main_nav = np.abs(E_main_nav) * np.sqrt(
             U["p_main"]**2 + U["lf_main"]**2 + uEF**2 + U["t_nav"]**2
@@ -122,7 +119,7 @@ def calculate_uncertainty(df, U):
         )
 
         # -------------------------
-        # RULE A (sum)
+        # RULE A (sum) sigma = sqrt( sigma1^2 + sigma2^2 + ... )
         # -------------------------
         sigma_total = np.sqrt(
             sig_main_nav**2 +

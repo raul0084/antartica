@@ -125,6 +125,14 @@ with main_col:
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     key="btn_download_filtered"
                 )
+        if df_filtered is not None:
+            selected_cols = st.multiselect(
+                "Choose columns to see from filtered view:",
+                options=df_filtered.columns.tolist(),
+                default=df_filtered.columns.tolist()  # show all by default
+            )
+
+            st.dataframe(df_filtered[selected_cols])
 
             
 

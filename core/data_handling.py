@@ -87,10 +87,10 @@ def enrich_calls_with_vessel_data(
     DEFAULT_FUEL        = "mdo/mgo"
     DEFAULT_ESLORA      = 100.0
 
-    LF_main      = 0.8
-    LF_aux_nav   = 0.3
+    LF_main      = 0.2
+    LF_aux_nav   = 0.2
     LF_aux_mani  = 0.5
-    LF_aux_hot   = 0.2
+    LF_aux_hot   = 0.4
 
     # -------------------------
     # CLEAN KEYS
@@ -109,45 +109,56 @@ def enrich_calls_with_vessel_data(
 
     df_vessels["fuel"] = df_vessels["fuel"].str.lower().str.strip()
 
+    # Check if df_calls has "eslora_metres" col
     VESSEL_COLS = ["p_main", "p_aux", "p_gt", "fuel", "eslora_metres"]
 
+    # If eslora_metres already in df_calls, stash it before merge to avoid conflict
+    has_eslora = "eslora_metres" in df_calls.columns
+    if has_eslora:
+        df_calls["eslora_metres_calls"] = df_calls["eslora_metres"]
+        df_calls = df_calls.drop(columns=["eslora_metres"])
+
+
     # -------------------------
-    # MERGE BY IMO FIRST
+    # DEDUP VESSELS
     # -------------------------
+    def dedup_by(df, key):
+        return (
+            df[df[key].notna()]
+            .sort_values(by=VESSEL_COLS, na_position="last")
+            .drop_duplicates(subset=[key], keep="first")
+        )
+
+    df_vessels_imo  = dedup_by(df_vessels, "imo")
+    df_vessels_mmsi = dedup_by(df_vessels, "mmsi")
+    df_vessels_name = dedup_by(df_vessels, "vaixellnom_clean")
+
+    # MERGE BY IMO
     df = df_calls.merge(
-        df_vessels[["imo"] + VESSEL_COLS],
-        on="imo",
-        how="left"
+        df_vessels_imo[["imo"] + VESSEL_COLS],
+        on="imo", how="left"
     )
     df.loc[df["p_main"].notna(), "match_source"] = "imo"
 
-    # -------------------------
     # FILL MISSING VIA MMSI
-    # -------------------------
     mask = df["p_main"].isna()
+    df_mmsi = df_calls[mask][["mmsi"]].merge(
+        df_vessels_mmsi[["mmsi"] + VESSEL_COLS],
+        on="mmsi", how="left"
+    ).set_index(df_calls[mask].index)
 
-    df_mmsi = df_calls[mask].merge(
-        df_vessels[["mmsi"] + VESSEL_COLS],
-        on="mmsi",
-        how="left"
-    )
+    df.update(df_mmsi[VESSEL_COLS])
+    df.loc[df.index.isin(df_mmsi[df_mmsi["p_main"].notna()].index), "match_source"] = "mmsi"
 
-    df.loc[mask, VESSEL_COLS] = df_mmsi[VESSEL_COLS].values
-    df.loc[mask & df["p_main"].notna(), "match_source"] = "mmsi"
-
-    # -------------------------
     # FILL MISSING VIA NAME
-    # -------------------------
     mask = df["p_main"].isna()
+    df_name = df_calls[mask][["vaixellnom_clean"]].merge(
+        df_vessels_name[["vaixellnom_clean"] + VESSEL_COLS],
+        on="vaixellnom_clean", how="left"
+    ).set_index(df_calls[mask].index)
 
-    df_name = df_calls[mask].merge(
-        df_vessels[["vaixellnom_clean"] + VESSEL_COLS],
-        on="vaixellnom_clean",
-        how="left"
-    )
-
-    df.loc[mask, VESSEL_COLS] = df_name[VESSEL_COLS].values
-    df.loc[mask & df["p_main"].notna(), "match_source"] = "name"
+    df.update(df_name[VESSEL_COLS])
+    df.loc[df.index.isin(df_name[df_name["p_main"].notna()].index), "match_source"] = "name"
 
     # -------------------------
     # QUALITY CONTROL
@@ -158,6 +169,11 @@ def enrich_calls_with_vessel_data(
     ].copy()
     df_unmatched["reason"] = "No match found via IMO, MMSI or vessel name"
     df.loc[unmatched_mask, "match_source"] = "default"
+
+    # Restore port_calls eslora_metres as priority over vessels value
+    if has_eslora:
+        df["eslora_metres"] = df["eslora_metres_calls"].combine_first(df["eslora_metres"])
+        df = df.drop(columns=["eslora_metres_calls"])
 
     # -------------------------
     # DEFAULT FALLBACK
@@ -193,8 +209,9 @@ def calculate_operational_times(df):
 
     # --- Defaults for mani and nav (if not provided)
     DEFAULTS = {
-        "mani_time": 1.0,
-        "nav_time":  0.5,
+        "mani_time": 1.6,
+        "nav_time":  1,
+        "hot_time": 8,
     }
 
     for col, default in DEFAULTS.items():
