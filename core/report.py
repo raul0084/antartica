@@ -4,16 +4,15 @@ from datetime import datetime
 from pathlib import Path
 from .data_handling import group_emissions
 
-
 def get_default_path(df_calls=None, base_dir=None):
-    if df_calls is not None:
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    if df_calls is not None and "Year" in df_calls.columns:
         ymin = df_calls["Year"].min()
         ymax = df_calls["Year"].max()
-        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"emissions_{ymin}_{ymax}_{ts}.xlsx"
     else:
-        filename = "emissions_report.xlsx"
-    return filename # Return just the filename for Streamlit
+        filename = f"emissions_{ts}.xlsx"
+    return filename
 
 def generate_excel_report(df_calls, kpis=None, qc_summary=None):
     """

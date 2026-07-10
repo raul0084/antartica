@@ -31,11 +31,11 @@ with right_col:
             st.subheader("Main Data Inputs")
 
             # UPLOAD PORT CALLS
-            df_calls =data_uploader_block(key="calls", validator=validate_calls)
+            df_calls = data_uploader_block(key="calls", validator=validate_calls, label="Upload Port Calls Dataset")
             calls_preview_block(df_calls)
 
             # UPLOAD VESSEL INFO
-            df_vaixells = data_uploader_block(key="vaixells", validator=validate_vaixells)
+            df_vaixells = data_uploader_block(key="vaixells", validator=validate_vaixells, label="Upload Vessel Information")
             vaixells_preview_block(df_vaixells) 
 
             if st.button("🔄 Reset", key="btn_reset_sys_variables"):
@@ -125,14 +125,14 @@ with main_col:
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     key="btn_download_filtered"
                 )
-        if df_filtered is not None:
-            selected_cols = st.multiselect(
-                "Choose columns to see from filtered view:",
-                options=df_filtered.columns.tolist(),
-                default=df_filtered.columns.tolist()  # show all by default
-            )
+        # if df_filtered is not None:
+        #     selected_cols = st.multiselect(
+        #         "Choose columns to see from filtered view:",
+        #         options=df_filtered.columns.tolist(),
+        #         default=df_filtered.columns.tolist()  # show all by default
+        #     )
 
-            st.dataframe(df_filtered[selected_cols])
+            #st.dataframe(df_filtered[selected_cols])
 
             
 
