@@ -17,13 +17,26 @@ import streamlit as st
 import pandas as pd
 import pydeck as pdk
 
+from app.components.file_upload import load_css
 from core.simulation import run_single_voyage, summarize_voyage
 from core.gpx_utils import parse_gpx, route_distance_nm, estimate_nav_time, build_gpx
 from core.config import default_emission_factors, default_uncertainties
 from core.report import generate_excel_report
 
-st.set_page_config(page_title="Voyage Simulation", layout="wide")
-st.title("Single-Voyage Emissions Simulation")
+st.set_page_config(layout="wide")
+load_css()
+
+title_container = st.container()
+
+title_container.markdown("""
+                        <div class="hero">
+                            <div class="hero-tag">Simulation</div>
+                            <div class="hero-title">Single-Voyage Emissions Simulation</div>
+                            <div class="hero-subtitle">Plan a route and simulate emissions</div>
+                        </div>
+                        """,
+                        unsafe_allow_html=True)
+st.markdown('<div class="section-divider"></div>', unsafe_allow_html=True)
 
 EF = default_emission_factors()
 U = default_uncertainties()

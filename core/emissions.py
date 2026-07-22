@@ -29,9 +29,6 @@ def calculate_emissions(df):
     # -------------------------
     for p in pollutants:
 
-        # ef_main = df[f"ef_main_{p}"].div(1e6)
-        # ef_aux  = df[f"ef_aux_{p}"].div(1e6)
-
         # -------------------------
         # MAIN ENGINE
         # -------------------------
@@ -47,66 +44,7 @@ def calculate_emissions(df):
         E_aux_hot  = df["p_aux"] * df["lf_aux_hot"]  * df[f"ef_aux_{p}"] * df["hot_time"]
 
         # -------------------------
-        # TOTALS
-        # -------------------------
-        df[f"E_nav_{p}_g"]  = (E_main_nav  + E_aux_nav)/(1e6)
-        df[f"E_mani_{p}_g"] = (E_main_mani + E_aux_mani)/(1e6)
-        df[f"E_hot_{p}_g"]  = (E_main_hot  + E_aux_hot)/(1e6)
-        df[f"E_total_{p}_g"] = (
-            df[f"E_nav_{p}_g"] +
-            df[f"E_mani_{p}_g"] +
-            df[f"E_hot_{p}_g"]
-        )
-
-    return df
-
-# CALCULATES EMISSIONS PER POLLUTANT PER ROW IN DF
-def calculate_emissions(df):
-    """
-    Calculates emissions for all pollutants in a fully vectorized way.
-
-    Requires:
-        - p_main, p_aux
-        - lf_main, lf_aux_nav, lf_aux_mani, lf_aux_hot
-        - nav_time, mani_time, hot_time
-        - ef_main_*, ef_aux_*
-
-    Returns:
-        df with emission columns added
-    """
-
-    df = df.copy()
-
-    # -------------------------
-    # DETECT POLLUTANTS
-    # -------------------------
-    ef_main_cols = [c for c in df.columns if c.startswith("ef_main_")]
-    pollutants = [c.replace("ef_main_", "") for c in ef_main_cols]
-
-    # -------------------------
-    # LOOP (lightweight, column-wise)
-    # -------------------------
-    for p in pollutants:
-
-        # ef_main = df[f"ef_main_{p}"].div(1e6)
-        # ef_aux  = df[f"ef_aux_{p}"].div(1e6)
-
-        # -------------------------
-        # MAIN ENGINE
-        # -------------------------
-        E_main_nav  = df["p_main"] * df["lf_main"] * df[f"ef_main_{p}"] * df["nav_time"]
-        E_main_mani = df["p_main"] * df["lf_main"] * df[f"ef_main_{p}"] * df["mani_time"]
-        E_main_hot  = 0  # always zero
-
-        # -------------------------
-        # AUX ENGINE
-        # -------------------------
-        E_aux_nav  = df["p_aux"] * df["lf_aux_nav"]  * df[f"ef_aux_{p}"] * df["nav_time"]
-        E_aux_mani = df["p_aux"] * df["lf_aux_mani"] * df[f"ef_aux_{p}"] * df["mani_time"]
-        E_aux_hot  = df["p_aux"] * df["lf_aux_hot"]  * df[f"ef_aux_{p}"] * df["hot_time"]
-
-        # -------------------------
-        # TOTALS
+        # TOTALS (1e6 to get tonnes, matching the batch pipeline)
         # -------------------------
         df[f"E_nav_{p}_g"]  = (E_main_nav  + E_aux_nav)/(1e6)
         df[f"E_mani_{p}_g"] = (E_main_mani + E_aux_mani)/(1e6)

@@ -25,9 +25,11 @@ htmlcov/
 .idea/
 
 # Data (optional – keep sample files if needed)
-data/*
-!data/sample_voyage.csv
-!data/emission_factors.json
+data/emission_tools/*
+data/tests/ADAVITA_tests/*
+
+# Clean Up
+clean_up/*
 
 # Notebooks (optional)
 notebooks/

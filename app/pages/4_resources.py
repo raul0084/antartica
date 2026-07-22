@@ -1,5 +1,7 @@
 import streamlit as st
 import pandas as pd
+import os
+import base64
 
 from app.components.file_upload import load_css
 from core.config import default_emission_factors
@@ -95,21 +97,26 @@ def render_resources():
     # ───────────────────────────────────────────────────────────────
 
     with tab2:
+        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+        DATA_DIR = os.path.join(BASE_DIR, "..", "datasets", "escalas")
 
-        for i in range(2012,2027):
-            datasets = [
-                {
-                    "icon": "📊",
-                    "color": "#e3f2fd",
-                    "title": f"Escalas Puerto Barcelona {i}",
-                    "source": "Port de Barcelona",
-                    "badge": ("Dataset", "badge-data"),
-                    "desc": "Comprehensive dataset of vessels that have made port calls at the Port of Barcelona.",
-                    "url": f"app/data/emissions_tools/escalas_finalizadas_{i}.csv",
-                },
-        ]
+        for i in range(2012, 2027):
+            path = os.path.join(DATA_DIR, f"escalas_finalizadas_{i}.csv")
+            if not os.path.exists(path):
+                continue
 
-        for d in datasets:
+            with open(path, "rb") as f:
+                b64 = base64.b64encode(f.read()).decode()
+
+            d = {
+                "icon": "📊",
+                "color": "#e3f2fd",
+                "title": f"Escalas Puerto Barcelona {i}",
+                "source": "Port de Barcelona",
+                "badge": ("Dataset", "badge-data"),
+                "desc": "Comprehensive dataset of vessels that have made port calls at the Port of Barcelona.",
+                "filename": os.path.basename(path),
+            }
             badge_text, badge_class = d["badge"]
 
             st.markdown(
@@ -122,7 +129,7 @@ def render_resources():
                         </p>
                         <p class="res-source">{d['source']}</p>
                         <p class="res-desc">{d['desc']}</p>
-                        <a class="res-link" href="{d['url']}" target="_blank">Download →</a>
+                        <a class="res-link" href="data:text/csv;base64,{b64}" download="{d['filename']}">Download →</a>
                     </div>
                 </div>
                 """,
